@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     # Avoiding circular imports for relationships
     from api.database.models.country import Country
     from api.database.models.game import Game
+    from api.database.models.goal import Goal
 
 
 class Airport(Base):
@@ -33,5 +34,3 @@ class Airport(Base):
 
     def __repr__(self) -> str:
         return f"<Airport(ident={self.ident}, name={self.name})>"
-
-

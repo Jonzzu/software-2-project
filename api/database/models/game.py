@@ -1,5 +1,5 @@
 from typing import List, Optional, TYPE_CHECKING
-from sqlalchemy import String, ForeignKey, Float, Integer
+from sqlalchemy import String, ForeignKey, Float, Integer, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.database.models.base import Base
@@ -25,6 +25,11 @@ class Game(Base):
 
     # Relationship: Each game has a current location (Airport)
     current_airport: Mapped["Airport"] = relationship(back_populates="games")
+
+    # Relationship: Many-to-Many with Goals
+    goals: Mapped[List["Goal"]] = relationship(
+        secondary=goal_reached, back_populates="achieved_by_games"
+    )
 
     def __repr__(self) -> str:
         return f"<Game(id={self.id}, player={self.screen_name}, loc={self.location})>"
