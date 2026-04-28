@@ -1,189 +1,230 @@
 from pathlib import Path
-import re
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 from api.database.db import engine
 from api.database.models.airport import Airport
 from api.database.models.country import Country
 
 
-def parse_insert_statement(insert_statement: str) -> dict:
-    """
-    Parse MySQL INSERT statement and extract values.
-    
-    Example:
-    INSERT INTO `airport` VALUES (1,'00A','heliport','Total Rf Heliport',...)
-    """
-    # Extract the VALUES part
-    values_match = re.search(r'VALUES\s*\((.*)\)', insert_statement, re.IGNORECASE | re.DOTALL)
-    if not values_match:
-        return None
-    
-    values_str = values_match.group(1)
-    
-    # Parse individual rows (each enclosed in parentheses)
-    rows = []
-    current_row = []
-    in_quotes = False
-    current_value = ""
-    
-    for char in values_str:
-        if char == "'" and (not current_value or current_value[-1] != "\\"):
-            in_quotes = not in_quotes
-            current_value += char
-        elif char == "," and not in_quotes:
-            current_row.append(current_value.strip())
-            current_value = ""
-        elif char == ")" and not in_quotes:
-            if current_value.strip():
-                current_row.append(current_value.strip())
-            if current_row:
-                rows.append(current_row)
-            current_row = []
-            current_value = ""
-        else:
-            current_value += char
-    
-    return rows
-
-
-def parse_sql_value(value: str):
-    """Convert SQL value string to Python value."""
-    value = value.strip()
-    if value == "NULL" or value == "":
-        return None
-    if value.startswith("'") and value.endswith("'"):
-        # Remove quotes and unescape
-        return value[1:-1].replace("\\'", "'").replace('""', '"')
-    try:
-        return int(value)
-    except ValueError:
-        try:
-            return float(value)
-        except ValueError:
-            # Return None for non-numeric strings instead of the string itself
-            return None
-
-
 def import_sql_file_direct(sql_file_path: str) -> None:
     """
     Parse SQL dump and insert data directly using SQLAlchemy ORM.
-    
-    Args:
-        sql_file_path: Path to the SQL file to import
+    Simple, reliable approach without complex parsing.
     """
     sql_file = Path(sql_file_path)
-    
+
     if not sql_file.exists():
         raise FileNotFoundError(f"SQL file not found: {sql_file_path}")
-    
-    # Read the SQL file
+
     with open(sql_file, 'r', encoding='utf-8') as f:
         sql_content = f.read()
-    
+
     session = Session(engine)
-    
+
     try:
-        # Find all INSERT statements for airport table
-        airport_inserts = re.findall(
-            r"INSERT INTO `airport`\s+VALUES\s+\((.*?)\);",
-            sql_content,
-            re.IGNORECASE | re.DOTALL
-        )
-        
-        print(f"Found {len(airport_inserts)} airport INSERT statements")
-        
-        # Track unique countries
-        countries_to_add = {}
-        airports_to_add = []
-        
-        for insert_group in airport_inserts:
-            # Parse multiple value groups in one INSERT
-            # Each row is like: (id, ident, type, name, ...)
-            rows = parse_insert_statement(f"INSERT INTO airport VALUES ({insert_group});")
-            
-            if not rows:
+        # ===== IMPORT COUNTRIES FIRST =====
+        print("=" * 60)
+        print("Importing countries...")
+
+        # Split by INSERT statements
+        insert_statements = sql_content.split("INSERT INTO `country`")
+
+        countries_imported = 0
+        countries_skipped = 0
+
+        for statement_part in insert_statements[1:]:  # Skip the part before first INSERT
+            # Extract just the VALUES(...) section
+            if "VALUES" not in statement_part:
                 continue
-            
-            for row in rows:
-                if len(row) < 11:  # Ensure we have at least the fields we need
-                    continue
-                
+
+            values_start = statement_part.find("VALUES")
+            values_section = statement_part[values_start:]
+
+            # Find the actual data rows (between parentheses after VALUES)
+            start_idx = values_section.find("(")
+            end_idx = values_section.rfind(";")
+
+            if start_idx == -1 or end_idx == -1:
+                continue
+
+            rows_str = values_section[start_idx+1:end_idx-1]  # Remove outer parens and semicolon
+
+            # Split rows by ),(
+            rows = rows_str.split("),(")
+
+            print(f"Found {len(rows)} country rows")
+
+            for row_str in rows:
                 try:
-                    # Map columns from the SQL dump to our needs
-                    id_val = parse_sql_value(row[0])
-                    ident = parse_sql_value(row[1])
-                    type_val = parse_sql_value(row[2])
-                    name = parse_sql_value(row[3])
-                    latitude = parse_sql_value(row[4])
-                    longitude = parse_sql_value(row[5])
-                    elevation = parse_sql_value(row[6])
-                    continent = parse_sql_value(row[7])
-                    iso_country = parse_sql_value(row[8])
-                    iso_region = parse_sql_value(row[9])
-                    municipality = parse_sql_value(row[10])
-                    
-                    # Normalize values
-                    iso_country = str(iso_country or "XX").strip()[:10]
+                    # Clean up the row
+                    row_str = row_str.strip()
+                    if row_str.startswith("("):
+                        row_str = row_str[1:]
+                    if row_str.endswith(")"):
+                        row_str = row_str[:-1]
+
+                    # Parse values manually
+                    values = parse_row_values(row_str)
+
+                    # Expect: iso_country, name, continent, wikipedia_link, keywords
+                    if len(values) < 3:
+                        countries_skipped += 1
+                        continue
+
+                    iso_country = values[0]
+                    name = values[1]
+                    continent = values[2] if len(values) > 2 else "XX"
+
+                    if not iso_country or not name:
+                        countries_skipped += 1
+                        continue
+
+                    # Normalize
+                    iso_country = str(iso_country).strip()[:10]
+                    name = str(name).strip()[:256]
+                    continent = str(continent or "XX").strip()[:2]
+
+                    # Check if exists
+                    if session.query(Country).filter_by(iso_country=iso_country).first():
+                        countries_skipped += 1
+                        continue
+
+                    # Create and add
+                    country = Country(
+                        iso_country=iso_country,
+                        name=name,
+                        continent=continent
+                    )
+                    session.add(country)
+                    countries_imported += 1
+
+                except Exception as e:
+                    countries_skipped += 1
+                    continue
+
+            session.commit()
+
+        print(f"✓ Imported {countries_imported} countries ({countries_skipped} skipped)")
+
+        # ===== IMPORT AIRPORTS =====
+        print("\nImporting airports...")
+
+        insert_statements = sql_content.split("INSERT INTO `airport`")
+
+        airports_imported = 0
+        airports_skipped = 0
+
+        for statement_part in insert_statements[1:]:  # Skip the part before first INSERT
+            if "VALUES" not in statement_part:
+                continue
+
+            values_start = statement_part.find("VALUES")
+            values_section = statement_part[values_start:]
+
+            start_idx = values_section.find("(")
+            end_idx = values_section.rfind(";")
+
+            if start_idx == -1 or end_idx == -1:
+                continue
+
+            rows_str = values_section[start_idx+1:end_idx-1]
+            rows = rows_str.split("),(")
+
+            print(f"Found {len(rows)} airport rows")
+
+            for row_str in rows:
+                try:
+                    # Clean up
+                    row_str = row_str.strip()
+                    if row_str.startswith("("):
+                        row_str = row_str[1:]
+                    if row_str.endswith(")"):
+                        row_str = row_str[:-1]
+
+                    # Parse values
+                    values = parse_row_values(row_str)
+
+                    # Expected order from SQL: id, ident, type, name, latitude_deg, longitude_deg,
+                    # elevation_ft, continent, iso_country, iso_region, municipality, ...
+                    if len(values) < 11:
+                        airports_skipped += 1
+                        continue
+
+                    id_val = values[0]
+                    ident = values[1]
+                    type_val = values[2]
+                    name = values[3]
+                    latitude = values[4]
+                    longitude = values[5]
+                    elevation = values[6]
+                    continent = values[7]
+                    iso_country = values[8]
+                    iso_region = values[9]
+                    municipality = values[10]
+
+                    if not ident or not iso_country:
+                        airports_skipped += 1
+                        continue
+
+                    # Type/name validation
+                    if not type_val or type_val == "":
+                        type_val = "unknown"
+                    if not name or name == "":
+                        name = "Unknown Airport"
+
+                    # Numeric conversion
+                    try:
+                        id_val = int(id_val) if id_val else 0
+                        latitude = float(latitude) if latitude else 0.0
+                        longitude = float(longitude) if longitude else 0.0
+                        elevation = int(elevation) if elevation else 0
+                    except (ValueError, TypeError):
+                        airports_skipped += 1
+                        continue
+
+                    # Normalize strings
+                    ident = str(ident).strip()[:40]
+                    name = str(name).strip()[:256]
+                    type_val = str(type_val).strip()[:40]
+                    iso_country = str(iso_country).strip()[:10]
                     continent = str(continent or "XX").strip()[:2]
                     iso_region = str(iso_region or "XX").strip()[:10]
-                    
-                    # Track countries
-                    if iso_country not in countries_to_add:
-                        countries_to_add[iso_country] = {
-                            'iso_country': iso_country,
-                            'name': iso_country,  # Default to code if no separate data
-                            'continent': continent
-                        }
-                    
-                    # Add airport
-                    airport = {
-                        'id': id_val or 0,
-                        'ident': (ident or "UNKNOWN").strip()[:40],
-                        'type': (type_val or "unknown").strip()[:40],
-                        'name': (name or "Unknown").strip()[:256],
-                        'latitude_deg': float(latitude) if latitude is not None else 0.0,
-                        'longitude_deg': float(longitude) if longitude is not None else 0.0,
-                        'elevation_ft': elevation if elevation is not None else 0,
-                        'continent': continent,
-                        'iso_region': iso_region,
-                        'municipality': (municipality or "Unknown").strip()[:100],
-                        'iso_country': iso_country
-                    }
-                    airports_to_add.append(airport)
-                    
-                except (ValueError, IndexError) as e:
-                    print(f"⚠ Warning parsing row: {str(e)[:50]}")
+                    municipality = str(municipality or "Unknown").strip()[:100]
+
+                    # Check if exists
+                    if session.query(Airport).filter_by(ident=ident).first():
+                        airports_skipped += 1
+                        continue
+
+                    # Create and add
+                    airport = Airport(
+                        id=id_val,
+                        ident=ident,
+                        type=type_val,
+                        name=name,
+                        latitude_deg=latitude,
+                        longitude_deg=longitude,
+                        elevation_ft=elevation,
+                        continent=continent,
+                        iso_region=iso_region,
+                        municipality=municipality,
+                        iso_country=iso_country
+                    )
+                    session.add(airport)
+                    airports_imported += 1
+
+                    if airports_imported % 500 == 0:
+                        session.commit()
+                        print(f"  Progress: {airports_imported} airports imported...")
+
+                except Exception as e:
+                    airports_skipped += 1
                     continue
-        
-        print(f"✓ Parsed {len(countries_to_add)} countries and {len(airports_to_add)} airports")
-        
-        # Insert countries first
-        print("Inserting countries...")
-        for country_data in countries_to_add.values():
-            existing = session.query(Country).filter_by(iso_country=country_data['iso_country']).first()
-            if not existing:
-                country = Country(**country_data)
-                session.add(country)
-        session.commit()
-        print(f"✓ Inserted {len(countries_to_add)} countries")
-        
-        # Insert airports
-        print("Inserting airports...")
-        for i, airport_data in enumerate(airports_to_add):
-            existing = session.query(Airport).filter_by(ident=airport_data['ident']).first()
-            if not existing:
-                airport = Airport(**airport_data)
-                session.add(airport)
-            
-            # Batch commit every 500 records
-            if (i + 1) % 500 == 0:
-                session.commit()
-                print(f"  Progress: {i + 1}/{len(airports_to_add)} airports inserted...")
-        
-        session.commit()
-        print(f"✓ Inserted {len(airports_to_add)} airports total")
-        
+
+            session.commit()
+
+        print(f"✓ Imported {airports_imported} airports ({airports_skipped} skipped)")
+        print("=" * 60)
+
     except Exception as e:
         session.rollback()
         print(f"✗ Error during import: {e}")
@@ -194,93 +235,44 @@ def import_sql_file_direct(sql_file_path: str) -> None:
         session.close()
 
 
-def migrate_data_to_models() -> None:
+def parse_row_values(row_str: str) -> list:
     """
-    Migrate data from imported tables to SQLAlchemy model tables.
-    This ensures only the fields defined in your models are kept.
+    Parse a single SQL row into individual values.
+    Handles quoted strings and commas inside them.
     """
-    session = Session(engine)
-    
-    try:
-        # Check if raw airport table has data
-        count = session.execute(text("SELECT COUNT(*) FROM airport")).scalar()
-        print(f"Found {count} airports in raw data")
-        
-        if count == 0:
-            print("⚠ No data found in airport table. Check if SQL dump was imported correctly.")
-            return
-        
-        # First, migrate countries (derive from airport data)
-        print("\nMigrating countries...")
-        raw_countries = session.execute(
-            text("""
-                SELECT DISTINCT iso_country, continent
-                FROM airport 
-                WHERE iso_country 
-                    IS NOT NULL AND iso_country != ''
-                ORDER BY iso_country
-            """)
-        ).fetchall()
-        
-        country_count = 0
-        for iso_country, continent in raw_countries:
-            existing = session.query(Country).filter_by(iso_country=iso_country).first()
-            if not existing:
-                country = Country(
-                    iso_country=iso_country.strip() if iso_country else "XX",
-                    name=iso_country if iso_country else "Unknown",  # Use country code as name if unavailable
-                    continent=continent.strip() if continent else "XX"
-                )
-                session.add(country)
-                country_count += 1
-        
-        session.commit()
-        print(f"✓ Migrated {country_count} countries")
-        
-        # Then, migrate airports (only the fields in your model)
-        print("\nMigrating airports...")
-        raw_airports = session.execute(
-            text("""
-                SELECT id, ident, type, name, latitude_deg, longitude_deg,
-                       elevation_ft, continent, iso_region, municipality, iso_country
-                FROM airport
-                ORDER BY ident
-            """)
-        ).fetchall()
-        
-        airport_count = 0
-        for row in raw_airports:
-            existing = session.query(Airport).filter_by(ident=row.ident).first()
-            if not existing:
-                airport = Airport(
-                    id=row.id,
-                    ident=row.ident.strip() if row.ident else "UNKNOWN",
-                    type=row.type.strip() if row.type else "unknown",
-                    name=row.name.strip() if row.name else "Unknown Airport",
-                    latitude_deg=float(row.latitude_deg) if row.latitude_deg else 0.0,
-                    longitude_deg=float(row.longitude_deg) if row.longitude_deg else 0.0,
-                    elevation_ft=row.elevation_ft,
-                    continent=row.continent.strip() if row.continent else "XX",
-                    iso_region=row.iso_region.strip() if row.iso_region else "XX",
-                    municipality=row.municipality.strip() if row.municipality else "Unknown",
-                    iso_country=row.iso_country.strip() if row.iso_country else "XX"
-                )
-                session.add(airport)
-                airport_count += 1
-                
-                # Commit in batches to avoid memory issues
-                if airport_count % 1000 == 0:
-                    session.commit()
-                    print(f"  Progress: {airport_count} airports migrated...")
-        
-        session.commit()
-        print(f"✓ Migrated {airport_count} airports total")
-        
-    except Exception as e:
-        session.rollback()
-        print(f"✗ Error during migration: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
-    finally:
-        session.close()
+    values = []
+    current_value = ""
+    in_quotes = False
+    i = 0
+
+    while i < len(row_str):
+        char = row_str[i]
+
+        # Toggle quote state
+        if char == "'" and (i == 0 or row_str[i-1] != "\\"):
+            in_quotes = not in_quotes
+            current_value += char
+        # Comma separator (only outside quotes)
+        elif char == "," and not in_quotes:
+            values.append(current_value.strip())
+            current_value = ""
+        else:
+            current_value += char
+
+        i += 1
+
+    # Add last value
+    if current_value.strip():
+        values.append(current_value.strip())
+
+    # Clean up values (remove quotes if present)
+    cleaned = []
+    for val in values:
+        if val.startswith("'") and val.endswith("'"):
+            cleaned.append(val[1:-1])
+        elif val.upper() == "NULL" or val == "":
+            cleaned.append(None)
+        else:
+            cleaned.append(val)
+
+    return cleaned

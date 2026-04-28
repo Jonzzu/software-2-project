@@ -14,15 +14,15 @@ Session = sessionmaker(bind=engine)
 @bp.route('/airports', methods=['GET'])
 def get_airports_route():
     """
-    Fetch all airports with name, ICAO code, latitude, and longitude.
+    Fetch large airports with name, ICAO code, latitude, and longitude.
     
     Returns:
-        JSON list of airports with their coordinates
+        JSON list of large airports with their coordinates
     """
     session = Session()
     try:
-        # Query all airports from database
-        airports = session.query(Airport).all()
+        # Query only large airports from database
+        airports = session.query(Airport).filter(Airport.type == "large_airport").all()
         
         # Extract required fields
         airports_data = [
@@ -53,15 +53,15 @@ def get_airports_route():
 
 def get_airports() -> List[Dict]:
     """
-    Helper function to get airports (non-route version).
+    Helper function to get large airports (non-route version).
     Useful for internal game logic.
     
     Returns:
-        List of airport dictionaries
+        List of large airport dictionaries
     """
     session = Session()
     try:
-        airports = session.query(Airport).all()
+        airports = session.query(Airport).filter(Airport.type == "large_airport").all()
         
         return [
             {

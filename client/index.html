@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lentopeli</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
     <div class="container">
-        <!-- Left Half: Map -->
         <div class="map-section">
-            <div id="map">Your Map Here</div>
+            <div id="map"></div>
         </div>
 
-        <!-- Right Half: Sidebar with 2 Stacked Columns -->
         <div class="sidebar">
             <div class="sidebar-column">
                 <h2>Stats & Actions</h2>
@@ -31,5 +33,11 @@
             </div>
         </div>
     </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="js/map.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
