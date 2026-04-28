@@ -3,11 +3,7 @@ from sqlalchemy.orm import sessionmaker
 
 # IMPORTANT: Import ALL model classes here to ensure they're registered with SQLAlchemy
 # This must happen BEFORE any database operations
-from api.database.models.base import Base
-from api.database.models.airport import Airport
-from api.database.models.country import Country
-from api.database.models.game import Game
-from api.database.models.goal import Goal
+from api.database.models import *
 
 from api.database.db import engine
 from api.utils.import_db import import_sql_file_direct
