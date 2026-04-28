@@ -1,19 +1,32 @@
 from flask import Flask
 from sqlalchemy.orm import sessionmaker
 
-from api.database.db import engine
+# IMPORTANT: Import ALL model classes here to ensure they're registered with SQLAlchemy
+# This must happen BEFORE any database operations
 from api.database.models.base import Base
-from api.utils.import_db import import_sql_file
+from api.database.models.airport import Airport
+from api.database.models.country import Country
+from api.database.models.game import Game
+from api.database.models.goal import Goal
+
+from api.database.db import engine
+from api.utils.import_db import import_sql_file_direct
 from routes import bp
 
-# Create all tables in the database
+# Create all tables based on SQLAlchemy models
 Base.metadata.create_all(engine)
 
 # Import SQL data from dump files
-# try:
-#     import_sql_file("database/dump/airports.sql")
-# except FileNotFoundError as e:
-#     print(f"Warning: {e}")
+try:
+    import_sql_file_direct("database/dump/airports.sql")
+    print("✓ Data migration complete!")
+    
+except FileNotFoundError as e:
+    print(f"Warning: {e}")
+except Exception as e:
+    print(f"Error during data import: {e}")
+    import traceback
+    traceback.print_exc()
 
 # Create a session
 Session = sessionmaker(bind=engine)
