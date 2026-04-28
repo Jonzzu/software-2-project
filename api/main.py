@@ -10,19 +10,19 @@ from api.utils.import_db import import_sql_file_direct
 from routes import bp
 
 # Create all tables based on SQLAlchemy models
-Base.metadata.create_all(engine)
+# Base.metadata.create_all(engine)
 
 # Import SQL data from dump files
-try:
-    import_sql_file_direct("database/dump/airports.sql")
-    print("✓ Data migration complete!")
-    
-except FileNotFoundError as e:
-    print(f"Warning: {e}")
-except Exception as e:
-    print(f"Error during data import: {e}")
-    import traceback
-    traceback.print_exc()
+# try:
+#     import_sql_file_direct("database/dump/airports.sql")
+#     print("✓ Data migration complete!")
+#
+# except FileNotFoundError as e:
+#     print(f"Warning: {e}")
+# except Exception as e:
+#     print(f"Error during data import: {e}")
+#     import traceback
+#     traceback.print_exc()
 
 # Create a session
 Session = sessionmaker(bind=engine)
