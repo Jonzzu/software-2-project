@@ -4,32 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lentopeli</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Left Half: Map -->
-        <div class="map-section">
-            <div id="map">Your Map Here</div>
-        </div>
+<div class="container">
+    <div class="map-section">
+        <div id="map"></div>
+    </div>
 
-        <!-- Right Half: Sidebar with 2 Stacked Columns -->
-        <div class="sidebar">
-            <div class="sidebar-column">
-                <h2>Stats & Actions</h2>
-                <p>Content for the first stacked column goes here.</p>
-                <div class="btn-grid">
-                    <button class="btn">Perkele</button>
-                    <button class="btn">Vittu</button>
-                    <button class="btn">Saatana</button>
-                    <button class="btn">Helvetti</button>
-                </div>
+    <aside class="sidebar">
+        <section class="panel status-section">
+            <h2 class="section-title">PLAYER STATUS</h2>
+            <div class="stat-row">FUEL: <span>5000 L</span></div>
+            <div class="stat-row">RIOT POINTS: <span>1250</span></div>
+            <div class="stat-row">BREAD: <span id="money-val">100 €</span></div>
+            <h2 class="section-title">TOIMINNOT</h2>
+            <button class="menu-btn special">SKILL TREE</button>
+            <button class="menu-btn special">GAMBLING</button>
+            <button class="menu-btn danger">RAGE QUIT</button>
+        </section>
+
+        <section class="panel inventory-section">
+            <h2 class="section-title">INVENTORY</h2>
+            <div class="anime-grid">
+                <div class="item-slot"><img
+                        src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx21-ELSYx3yMPcKM.jpg"
+                        alt="OP"></div>
+                <div class="item-slot"></div>
+                <div class="item-slot"></div>
+                <div class="item-slot"></div>
+                <div class="item-slot"></div>
+                <div class="item-slot"></div>
             </div>
-            <div class="sidebar-column">
-                <h2>Collection</h2>
-                <p>Content for the second stacked column goes here.</p>
-            </div>
+        </section>
+    </aside>
+</div>
+
+<!-- Travel Confirmation Modal -->
+<div id="travelModal" class="modal">
+    <div class="modal-content">
+        <h2 class="modal-title"></h2>
+        <p class="modal-message">Do you want to travel here?</p>
+
+        <div class="modal-actions">
+            <button class="btn btn-confirm">Confirm</button>
+            <button class="btn btn-cancel">Cancel</button>
         </div>
     </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="js/game.js"></script>
+<script src="js/map.js"></script>
+<script src="js/main.js"></script>
+
 </body>
 </html>

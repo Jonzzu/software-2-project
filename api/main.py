@@ -1,25 +1,38 @@
 from flask import Flask
+from flask_cors import CORS
 from sqlalchemy.orm import sessionmaker
 
+# IMPORTANT: Import ALL model classes here to ensure they're registered with SQLAlchemy
+# This must happen BEFORE any database operations
+from api.database.models import *
+
 from api.database.db import engine
-from api.database.models.base import Base
-from api.utils.import_db import import_sql_file
+from api.utils.import_db import import_sql_file_direct
 from routes import bp
 
-# Create all tables in the database
+# Create all tables based on SQLAlchemy models
 Base.metadata.create_all(engine)
 
 # Import SQL data from dump files
 # try:
-#     import_sql_file("database/dump/airports.sql")
+#     import_sql_file_direct("database/dump/airports.sql")
+#     print("✓ Data migration complete!")
+#
 # except FileNotFoundError as e:
 #     print(f"Warning: {e}")
+# except Exception as e:
+#     print(f"Error during data import: {e}")
+#     import traceback
+#     traceback.print_exc()
 
 # Create a session
 Session = sessionmaker(bind=engine)
 session = Session()
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app, origins=["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:63342"])
 
 # Register blueprints from routes folder
 app.register_blueprint(bp)

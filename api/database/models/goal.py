@@ -18,6 +18,6 @@ class Goal(Base):
     target_maxvalue: Mapped[Optional[int]] = mapped_column(Integer)
     target_text: Mapped[Optional[str]] = mapped_column(String(256))
 
-    reached_by_games: Mapped[List["Game"]] = relationship(
-        secondary=goal_reached, back_populates="achieved_goals"
+    achieved_by_games: Mapped[List["Game"]] = relationship(
+        secondary=goal_reached, back_populates="goals"
     )
