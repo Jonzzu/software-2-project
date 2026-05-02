@@ -69,25 +69,33 @@ async function createNewGame(screenName, location = "EFHK") {
             payload.location = location;
         }
     
-        const response = await fetch('/api/game/create', {
+        const response = await fetch('http://localhost:5000/api/game/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
         });
-    
-        const data = await response.json();
-    
+
+        // Check if response is ok BEFORE parsing JSON
         if (!response.ok) {
-            throw new Error(data.error || 'Failed to create game');
+            const errorText = await response.text();
+            console.error('Server error response:', errorText);
+            try {
+                const errorData = JSON.parse(errorText);
+                throw new Error(errorData.error || 'Failed to create game');
+            } catch (parseError) {
+                throw new Error(`Server error (${response.status}): ${errorText}`);
+            }
         }
-    
-        console.log('✓ Game created successfully:', data);
+
+        const data = await response.json();
         
+        console.log('✓ Game created successfully:', data);
+    
         // Save the game ID to localStorage for later use
         saveGameId(data.game_id);
-        
+    
         return data;
     } catch (error) {
         console.error('✗ Error creating game:', error.message);
@@ -102,7 +110,7 @@ async function createNewGame(screenName, location = "EFHK") {
  */
 async function getGameInfo(gameId) {
     try {
-        const response = await fetch(`/api/game/${gameId}`, {
+        const response = await fetch(`http://localhost:5000/api/game/${gameId}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -120,6 +128,57 @@ async function getGameInfo(gameId) {
         return data;
     } catch (error) {
         console.error('✗ Error fetching game:', error.message);
+        throw error;
+    }
+}
+
+// ============================================
+// Travel
+// ============================================
+
+/**
+ * Travel to a destination airport
+ * @param {string} destination - The airport ICAO code (ident)
+ * @returns {Promise<Object>} Updated game and airport data
+ */
+async function travelToAirport(destination) {
+    try {
+        const gameId = getGameId();
+
+        if (!gameId) {
+            throw new Error('No active game found');
+        }
+
+        const payload = {
+            destination: destination.toUpperCase()
+        };
+
+        const response = await fetch(`http://localhost:5000/api/game/${gameId}/travel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error response:', errorText);
+            try {
+                const errorData = JSON.parse(errorText);
+                throw new Error(errorData.error || 'Travel failed');
+            } catch (parseError) {
+                throw new Error(`Server error (${response.status}): ${errorText}`);
+            }
+        }
+
+        const data = await response.json();
+
+        console.log('✓ Travel successful:', data);
+
+        return data;
+    } catch (error) {
+        console.error('✗ Error traveling:', error.message);
         throw error;
     }
 }

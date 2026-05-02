@@ -16,17 +16,17 @@ def create_game():
     """
     try:
         data = request.get_json()
-        
+    
         if not data or 'screen_name' not in data:
             return jsonify({'error': 'Missing screen_name'}), 400
-        
+    
         screen_name = data['screen_name'].strip()
-        
+    
         if not screen_name:
             return jsonify({'error': 'screen_name cannot be empty'}), 400
-        
+    
         location = data.get('location')
-        
+    
         session = Session()
         try:
             # If no location provided, use the first available airport
@@ -40,17 +40,17 @@ def create_game():
                 airport = session.query(Airport).filter_by(ident=location).first()
                 if not airport:
                     return jsonify({'error': 'Invalid airport location'}), 400
-            
+        
             new_game = Game(
                 screen_name=screen_name,
                 location=location,
                 points=0,
                 money=0
             )
-            
+        
             session.add(new_game)
             session.commit()
-            
+        
             return jsonify({
                 'success': True,
                 'game_id': new_game.id,
@@ -59,12 +59,16 @@ def create_game():
                 'points': new_game.points,
                 'money': new_game.money
             }), 201
-        
+    
         finally:
             session.close()
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Log the actual error for debugging
+        print(f"Error in create_game: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error: ' + str(e)}), 500
 
 
 @bp.route('/<int:game_id>', methods=['GET'])

@@ -65,7 +65,7 @@ def create_collection():
 def add_series_to_collection():
     """
     Add a series to a collection.
-    Expects JSON with collection_id and series_id (or create new series data).
+    Expects JSON with collection_id and series data.
     """
     try:
         data = request.get_json()
@@ -74,7 +74,6 @@ def add_series_to_collection():
             return jsonify({'error': 'Missing collection_id'}), 400
         
         collection_id = data['collection_id']
-        series_id = data.get('series_id')
         
         session = Session()
         try:
@@ -84,43 +83,34 @@ def add_series_to_collection():
             if not collection:
                 return jsonify({'error': 'Collection not found'}), 404
             
-            # If series_id provided, use existing series
-            if series_id:
-                series = session.query(Series).filter_by(id=series_id).first()
-                
-                if not series:
-                    return jsonify({'error': 'Series not found'}), 404
-                
-                # Check if series is already in collection
-                if series in collection.series:
-                    return jsonify({'error': 'Series already in collection'}), 400
-                
-                collection.series.append(series)
+            # Get or create the series
+            anilist_id = data.get('anilist_id')
+            series_name = data.get('name', 'Unknown Series').strip()
             
-            # Otherwise, create new series and add it
+            # Check if series already exists by anilist_id
+            if anilist_id:
+                series = session.query(Series).filter_by(anilist_id=anilist_id).first()
             else:
-                if 'name' not in data:
-                    return jsonify({'error': 'Missing series name'}), 400
-                
-                series_name = data['name'].strip()
-                
-                if not series_name:
-                    return jsonify({'error': 'Series name cannot be empty'}), 400
-                
-                new_series = Series(
+                # If no anilist_id, check by name
+                series = session.query(Series).filter_by(name=series_name).first()
+            
+            # If series doesn't exist, create it
+            if not series:
+                series = Series(
                     name=series_name,
-                    anilist_id=data.get('anilist_id'),
-                    rating=float(data.get('rating', 0.0)),
+                    anilist_id=anilist_id,
+                    average_score=float(data.get('average_score', 0.0)),
                     description=data.get('description'),
                     cover_image_url=data.get('cover_image_url')
                 )
-                
-                session.add(new_series)
-                session.flush()  # Get the ID before committing
-                
-                collection.series.append(new_series)
-                series = new_series
+                session.add(series)
+                session.flush()
             
+            # Check if series is already in collection
+            if series in collection.series:
+                return jsonify({'error': 'Series already in collection'}), 400
+            
+            collection.series.append(series)
             session.commit()
             
             return jsonify({
@@ -128,15 +118,15 @@ def add_series_to_collection():
                 'collection_id': collection.id,
                 'series_id': series.id,
                 'series_name': series.name,
-                'rating': series.rating,
+                'average_score': series.average_score,
                 'series_count': len(collection.series)
             }), 201
         
         finally:
             session.close()
     
-    except ValueError:
-        return jsonify({'error': 'Invalid rating value'}), 400
+    except ValueError as e:
+        return jsonify({'error': 'Invalid data format: ' + str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
