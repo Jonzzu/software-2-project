@@ -482,3 +482,60 @@ body, html {
 .menu-btn.danger:hover {
     background-color: #da190b;
 }
+
+.series-modal {
+    width: 90%;
+    max-width: 900px;
+}
+
+.series-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.series-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 2px solid transparent;
+}
+
+.series-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.series-card.selected {
+    border-color: #ff6b6b;
+}
+
+.series-card-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+}
+
+.series-card-info {
+    padding: 12px;
+}
+
+.series-card-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.series-card-score {
+    color: #666;
+    font-size: 12px;
+}

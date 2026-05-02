@@ -86,9 +86,24 @@
             <button class="btn btn-cancel">Cancel</button>
         </div>
     </div>
-</div>
 
-<!-- Leaflet JS -->
+    <!-- Series Selection Modal (appears after travel) -->
+    <div id="seriesModal" class="modal">
+        <div class="modal-content series-modal">
+            <h2 class="modal-title">Choose a Series to Add</h2>
+            <p class="modal-message">Select one of these amazing series to add to your collection!</p>
+            
+            <div id="seriesOptions" class="series-options">
+                <!-- Series cards will be inserted here dynamically -->
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn btn-cancel" id="skipSeriesBtn">Skip</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script src="js/game.js"></script>

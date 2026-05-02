@@ -149,6 +149,9 @@ function handleTravelConfirm(icao, airportName) {
                 if (updatedGameData.current_airport) {
                     map.setView([updatedGameData.current_airport.latitude_deg, updatedGameData.current_airport.longitude_deg], 4);
                 }
+                
+                // Show the series selection modal
+                showSeriesModal();
             }).catch(err => {
                 console.error('Failed to fetch updated game info:', err);
             });
@@ -160,46 +163,231 @@ function handleTravelConfirm(icao, airportName) {
 }
 
 /**
- * Update game stats in the sidebar
+ * Show the series selection modal
  */
-function updateGameStats(gameData) {
-    console.log('Updating game stats:', gameData);
-    
-    if (!gameData || !gameData.game || !gameData.current_airport) {
-        console.warn('Invalid game data for update:', gameData);
-        return;
+async function showSeriesModal() {
+    try {
+        const response = await fetch('http://localhost:5000/api/anilist/random-series');
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch random series');
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success || !data.series) {
+            throw new Error('No series data received');
+        }
+        
+        // Populate the modal with series options
+        const seriesOptions = document.getElementById('seriesOptions');
+        seriesOptions.innerHTML = '';
+        
+        data.series.forEach((series, index) => {
+            const card = document.createElement('div');
+            card.className = 'series-card';
+            card.innerHTML = `
+                <img src="${series.image}" alt="${series.title}" class="series-card-image">
+                <div class="series-card-info">
+                    <div class="series-card-title">${series.title}</div>
+                    <div class="series-card-score">★ ${series.score || 'N/A'}</div>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => {
+                handleSeriesSelection(series, card, seriesOptions);
+            });
+            
+            seriesOptions.appendChild(card);
+        });
+        
+        // Show the modal
+        const seriesModal = document.getElementById('seriesModal');
+        seriesModal.classList.add('active');
+        seriesModal.style.display = 'flex';
+        seriesModal.style.zIndex = '10000';
+        
+        // Handle skip button
+        const skipBtn = document.getElementById('skipSeriesBtn');
+        skipBtn.onclick = closeSeriesModal;
+        
+    } catch (error) {
+        console.error('Error showing series modal:', error);
     }
-    
-    const playerNameEl = document.getElementById('statusPlayerName');
-    const locationEl = document.getElementById('statusLocation');
-    const pointsEl = document.getElementById('statusPoints');
-    const moneyEl = document.getElementById('statusMoney');
-    
-    if (playerNameEl) {
-        playerNameEl.textContent = gameData.game.screen_name || '-';
-        console.log('Updated player name:', gameData.game.screen_name);
-    }
-    
-    if (locationEl) {
-        locationEl.textContent = gameData.current_airport.ident || '-';
-        console.log('Updated location:', gameData.current_airport.ident);
-    }
-    
-    if (pointsEl) {
-        pointsEl.textContent = gameData.game.points || '0';
-        console.log('Updated points:', gameData.game.points);
-    }
-    
-    if (moneyEl) {
-        moneyEl.textContent = (gameData.game.money || '0') + ' €';
-        console.log('Updated money:', gameData.game.money);
-    }
-    
-    // Also update global state
-    window.currentGame = gameData.game;
-    window.currentAirport = gameData.current_airport;
-    
-    console.log('✓ Game stats updated successfully');
 }
+
+/**
+ * Handle series selection
+ */
+function handleSeriesSelection(series, cardElement, seriesOptions) {
+    // Remove previous selection
+    document.querySelectorAll('.series-card.selected').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Mark this card as selected
+    cardElement.classList.add('selected');
+    
+    // Add the series to the player's collection
+    addSeriesToCollection(series);
+}
+
+/**
+ * Add selected series to player's collection
+ */
+async function addSeriesToCollection(series) {
+    try {
+        const gameId = getGameId();
+        const screenName = window.currentGame.screen_name;
+        
+        if (!gameId || !screenName) {
+            throw new Error('Game information not found');
+        }
+        
+        // First, check if collection exists, if not create it
+        let collectionId = await getOrCreateCollection(screenName);
+        
+        if (!collectionId) {
+            throw new Error('Failed to get or create collection');
+        }
+        
+        // Add the series to the collection
+        const response = await fetch('http://localhost:5000/api/collection/add-series', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                collection_id: collectionId,
+                name: series.title,
+                anilist_id: series.id,
+                average_score: series.score || 0,
+                description: series.description,
+                cover_image_url: series.image
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to add series to collection');
+        }
+        
+        const data = await response.json();
+        console.log('✓ Series added to collection:', data);
+        
+        // Close the modal after successful addition
+        closeSeriesModal();
+        
+        // Refresh the collection display
+        updateCollectionDisplay(screenName);
+        
+    } catch (error) {
+        console.error('✗ Error adding series to collection:', error);
+        alert('Failed to add series: ' + error.message);
+    }
+}
+
+/**
+ * Get or create collection for the player
+ */
+async function getOrCreateCollection(screenName) {
+    try {
+        // First try to get existing collections
+        const getResponse = await fetch(`http://localhost:5000/api/collection/game/${screenName}`);
+        const getData = await getResponse.json();
+        
+        if (getData.success && getData.collections && getData.collections.length > 0) {
+            // Return the first collection's ID
+            return getData.collections[0].id;
+        }
+        
+        // If no collection exists, create one
+        const createResponse = await fetch('http://localhost:5000/api/collection/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                screen_name: screenName
+            })
+        });
+        
+        if (!createResponse.ok) {
+            const error = await createResponse.json();
+            throw new Error(error.error || 'Failed to create collection');
+        }
+        
+        const data = await createResponse.json();
+        return data.collection_id;
+        
+    } catch (error) {
+        console.error('Error getting or creating collection:', error);
+        return null;
+    }
+}
+
+/**
+ * Close the series selection modal
+ */
+function closeSeriesModal() {
+    const seriesModal = document.getElementById('seriesModal');
+    seriesModal.classList.remove('active');
+    seriesModal.style.display = 'none';
+}
+
+/**
+ * Update collection display in the UI
+ */
+async function updateCollectionDisplay(screenName) {
+    try {
+        const response = await fetch(`http://localhost:5000/api/collection/game/${screenName}`);
+        const data = await response.json();
+        
+        if (data.success && data.collections && data.collections.length > 0) {
+            // Get the first collection and its series
+            const collection = data.collections[0];
+                const seriesResponse = await fetch(`http://localhost:5000/api/collection/${collection.id}/series`);
+                const seriesData = await seriesResponse.json();
+                
+                if (seriesData.success && seriesData.series) {
+                    // Update the collection panel
+                    displayCollection(seriesData);
+                }
+            }
+        } catch (error) {
+            console.error('Error updating collection display:', error);
+        }
+    }
+
+    /**
+     * Display collection in the sidebar
+     */
+    function displayCollection(collectionData) {
+        const inventorySection = document.querySelector('.inventory-section .anime-grid');
+        
+        if (!inventorySection) {
+            console.warn('Collection panel not found');
+            return;
+        }
+        
+        // Clear existing items
+        inventorySection.innerHTML = '';
+        
+        // Add series items
+        collectionData.series.forEach(series => {
+            const itemSlot = document.createElement('div');
+            itemSlot.className = 'item-slot';
+            itemSlot.innerHTML = `
+                <img src="${series.cover_image_url}" alt="${series.name}" title="${series.name}">
+            `;
+            inventorySection.appendChild(itemSlot);
+        });
+        
+        // Update section title with count
+        const title = document.querySelector('.inventory-section .section-title');
+        if (title) {
+            title.textContent = `INVENTORY (${collectionData.series.length})`;
+        }
+    }
 
 loadAirports();
