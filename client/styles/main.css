@@ -227,22 +227,22 @@ body, html {
     display: none !important;
 }
 
-/* Travel Modal */
+/* Travel Modal - FIXED */
 .modal {
-    display: none;
+    display: none !important;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: 1000;
+    z-index: 10000 !important;
     justify-content: center;
     align-items: center;
 }
 
 .modal.active {
-    display: flex;
+    display: flex !important;
 }
 
 .modal-content {
@@ -251,6 +251,8 @@ body, html {
     padding: 30px;
     max-width: 400px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 10001;
 }
 
 .modal-title {
@@ -298,5 +300,185 @@ body, html {
 }
 
 .btn-cancel:hover {
+    background-color: #da190b;
+}
+
+/* Airport marker styling */
+.airport-marker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: all;
+}
+
+.airport-badge {
+    background-color: #2196F3;
+    color: white;
+    border: 2px solid #1976D2;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-weight: bold;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    display: inline-block;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.airport-badge:hover {
+    background-color: #1976D2;
+    transform: scale(1.1);
+}
+
+/* New Game Screen */
+.new-game-screen {
+    display: none;
+    width: 100%;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 2000;
+}
+
+.new-game-screen.active {
+    display: flex;
+}
+
+.game-screen {
+    display: none;
+}
+
+.game-screen.active {
+    display: block;
+}
+
+.new-game-container {
+    background: white;
+    border-radius: 12px;
+    padding: 60px 40px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.new-game-container h1 {
+    font-size: 2.5em;
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #888;
+    font-size: 1.1em;
+    margin-bottom: 40px;
+}
+
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.form-group input {
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.text-hint {
+    font-size: 0.85em;
+    color: #999;
+    margin-top: 4px;
+}
+
+.btn-start {
+    padding: 16px 32px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1em;
+    cursor: pointer;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-start:active {
+    transform: translateY(0);
+}
+
+.error-message {
+    color: #ff6b6b;
+    background: #ffe0e0;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid #ff5252;
+}
+
+.error-message.hidden {
+    display: none;
+}
+
+.spinner {
+    text-align: center;
+}
+
+.spinner.hidden {
+    display: none;
+}
+
+.spinner::after {
+    content: '';
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f0f0f0;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Game Screen (existing layout visible when active) */
+.menu-btn.danger {
+    background-color: #f44336;
+}
+
+.menu-btn.danger:hover {
     background-color: #da190b;
 }

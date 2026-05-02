@@ -11,37 +11,68 @@
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-<div class="container">
-    <div class="map-section">
-        <div id="map"></div>
-    </div>
 
-    <aside class="sidebar">
-        <section class="panel status-section">
-            <h2 class="section-title">PLAYER STATUS</h2>
-            <div class="stat-row">FUEL: <span>5000 L</span></div>
-            <div class="stat-row">RIOT POINTS: <span>1250</span></div>
-            <div class="stat-row">BREAD: <span id="money-val">100 €</span></div>
-            <h2 class="section-title">TOIMINNOT</h2>
-            <button class="menu-btn special">SKILL TREE</button>
-            <button class="menu-btn special">GAMBLING</button>
-            <button class="menu-btn danger">RAGE QUIT</button>
-        </section>
-
-        <section class="panel inventory-section">
-            <h2 class="section-title">INVENTORY</h2>
-            <div class="anime-grid">
-                <div class="item-slot"><img
-                        src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx21-ELSYx3yMPcKM.jpg"
-                        alt="OP"></div>
-                <div class="item-slot"></div>
-                <div class="item-slot"></div>
-                <div class="item-slot"></div>
-                <div class="item-slot"></div>
-                <div class="item-slot"></div>
+<!-- New Game Screen -->
+<div id="newGameScreen" class="new-game-screen active">
+    <div class="new-game-container">
+        <h1>Two Piece</h1>
+        <p class="subtitle">Lennä paikasta toiseen ja kerää parhaat sarjat itsellesi!</p>
+        
+        <div class="form-container">
+            <div class="form-group">
+                <label for="playerName">Syötä nimi:</label>
+                <input 
+                    type="text" 
+                    id="playerName" 
+                    placeholder="esim. Pelaaja1"
+                    maxlength="50"
+                >
+                <small class="text-hint">Tämä tulee olemaan sinun pelaajanimesi</small>
             </div>
-        </section>
-    </aside>
+            
+            <button id="startGameBtn" class="btn-start">Aloita peli</button>
+            
+            <div id="errorMessage" class="error-message hidden"></div>
+            <div id="loadingSpinner" class="spinner hidden"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Game Screen -->
+<div id="gameScreen" class="game-screen">
+    <div class="container">
+        <div class="map-section">
+            <div id="map"></div>
+        </div>
+
+        <aside class="sidebar">
+            <section class="panel status-section">
+                <h2 class="section-title">PLAYER STATUS</h2>
+                <div class="stat-row">PLAYER: <span id="statusPlayerName">-</span></div>
+                <div class="stat-row">LOCATION: <span id="statusLocation">-</span></div>
+                <div class="stat-row">RIOT POINTS: <span id="statusPoints">0</span></div>
+                <div class="stat-row">BREAD: <span id="statusMoney">0 €</span></div>
+                <h2 class="section-title">TOIMINNOT</h2>
+                <button class="menu-btn">COLLECTIONS</button>
+                <button class="menu-btn">TRAVEL</button>
+                <button class="menu-btn danger" id="quitGameBtn">QUIT GAME</button>
+            </section>
+
+            <section class="panel inventory-section">
+                <h2 class="section-title">INVENTORY</h2>
+                <div class="anime-grid">
+                    <div class="item-slot"><img
+                            src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx21-ELSYx3yMPcKM.jpg"
+                            alt="OP"></div>
+                    <div class="item-slot"></div>
+                    <div class="item-slot"></div>
+                    <div class="item-slot"></div>
+                    <div class="item-slot"></div>
+                    <div class="item-slot"></div>
+                </div>
+            </section>
+        </aside>
+    </div>
 </div>
 
 <!-- Travel Confirmation Modal -->
