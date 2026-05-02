@@ -9,6 +9,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 // Store markers for later reference
 const airportMarkers = {};
+let currentAirport = null;
 
 /**
  * Fetch airports from backend and add them as markers
@@ -64,7 +65,7 @@ function addAirportMarker(airport) {
         if (badge) {
             badge.addEventListener('click', (e) => {
                 e.stopPropagation();
-                openTravelModal(icao, name);
+                openTravelModal(airport);
             });
         }
     }, 50);
@@ -76,11 +77,11 @@ function addAirportMarker(airport) {
 /**
  * Open the travel confirmation modal
  */
-function openTravelModal(icao, airportName) {
+function openTravelModal(airport) {
     const modal = document.getElementById('travelModal');
     const modalTitle = document.querySelector('#travelModal .modal-title');
 
-    modalTitle.textContent = airportName;
+    modalTitle.textContent = airport.name;
     modal.classList.add('active');
 
     // Remove old listeners
@@ -92,7 +93,7 @@ function openTravelModal(icao, airportName) {
 
     // Add new listeners
     document.querySelector('#travelModal .btn-confirm').addEventListener('click', () => {
-        handleTravelConfirm(icao, airportName);
+        handleTravelConfirm(airport);
     });
 
     document.querySelector('#travelModal .btn-cancel').addEventListener('click', () => {
@@ -111,9 +112,49 @@ function closeTravelModal() {
 /**
  * Handle travel confirmation
  */
-function handleTravelConfirm(icao, airportName) {
-    console.log(`Travel confirmed to ${icao} (${airportName})`);
+function handleTravelConfirm(destinationAirport) {
+    const previousAirport = currentAirport;
+
+    if (previousAirport && previousAirport.icao === destinationAirport.icao) {
+        closeTravelModal();
+        return;
+    }
+
+    if (previousAirport) {
+        const distanceKm = calculateDistanceKm(previousAirport, destinationAirport);
+
+        if (typeof spendFuelForDistance === 'function' && !spendFuelForDistance(distanceKm)) {
+            closeTravelModal();
+            return;
+        }
+    }
+
+    currentAirport = destinationAirport;
+    console.log(`Travel confirmed to ${destinationAirport.icao} (${destinationAirport.name})`);
     closeTravelModal();
+
+    if (typeof loadRandomAnimeInventory === 'function') {
+        loadRandomAnimeInventory();
+    }
+}
+
+function calculateDistanceKm(fromAirport, toAirport) {
+    const earthRadiusKm = 6371;
+    const lat1 = degreesToRadians(fromAirport.latitude);
+    const lon1 = degreesToRadians(fromAirport.longitude);
+    const lat2 = degreesToRadians(toAirport.latitude);
+    const lon2 = degreesToRadians(toAirport.longitude);
+    const dlat = lat2 - lat1;
+    const dlon = lon2 - lon1;
+    const a = Math.sin(dlat / 2) ** 2
+        + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earthRadiusKm * c;
+}
+
+function degreesToRadians(degrees) {
+    return degrees * Math.PI / 180;
 }
 
 loadAirports();

@@ -1,7 +1,9 @@
 import random
-import requests
 import time
-from typing import List, Dict
+from typing import Dict, List
+
+import requests
+from flask import Blueprint, jsonify, request
 
 
 # def get_random_anime_table():
@@ -58,9 +60,7 @@ from typing import List, Dict
 #         return []
 
 
-import random
-import requests
-from typing import List, Dict
+bp = Blueprint('anilist', __name__)
 
 
 def get_random_anime(n: int = 3) -> List[Dict]:
@@ -127,10 +127,12 @@ def get_random_anime(n: int = 3) -> List[Dict]:
 
         anime_list = []
         for anime in selected:
+            average_score = anime['averageScore'] if anime['averageScore'] is not None else 0
             entry = {
                 "id": anime.get('id'),
                 "title": anime['title']['english'] or anime['title']['romaji'],
-                "score": anime['averageScore'] if anime['averageScore'] is not None else "N/A",
+                "score": average_score,
+                "averageScore": average_score,
                 "description": anime['description'] or "No description available.",
                 "image": anime['coverImage']['medium']
             }
@@ -141,6 +143,26 @@ def get_random_anime(n: int = 3) -> List[Dict]:
     except requests.exceptions.RequestException as e:
         print(f"Error fetching random anime: {e}")
         return []
+
+
+@bp.route('/random', methods=['GET'])
+def random_anime():
+    try:
+        count = int(request.args.get('count', 6))
+    except ValueError:
+        return jsonify({'error': 'count must be a number'}), 400
+
+    count = max(1, min(count, 12))
+    anime = get_random_anime(count)
+
+    if not anime:
+        return jsonify({'success': False, 'anime': [], 'error': 'Could not fetch random anime'}), 502
+
+    return jsonify({
+        'success': True,
+        'anime': anime,
+        'count': len(anime)
+    }), 200
 
 
 # --- TESTAUSLOHKO ---

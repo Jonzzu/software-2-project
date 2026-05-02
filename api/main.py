@@ -8,7 +8,7 @@ from api.database.models import *
 
 from api.database.db import engine
 from api.utils.import_db import import_sql_file_direct
-from routes import bp
+from api.routes import bp
 
 # Create all tables based on SQLAlchemy models
 Base.metadata.create_all(engine)
@@ -31,8 +31,8 @@ session = Session()
 
 app = Flask(__name__)
 
-# Enable CORS for all routes
-CORS(app, origins=["http://localhost:3000", "http://localhost:8080", "http://localhost:5173", "http://localhost:63342"])
+# Enable CORS for the local frontend, including file:// and editor-served pages.
+CORS(app)
 
 # Register blueprints from routes folder
 app.register_blueprint(bp)

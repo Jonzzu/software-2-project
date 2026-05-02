@@ -13,27 +13,39 @@
 <body>
 <div class="container">
     <div class="map-section">
+        <h2 class="section-title">WORLD MAP</h2>
         <div id="map"></div>
     </div>
 
     <aside class="sidebar">
         <section class="panel status-section">
             <h2 class="section-title">PLAYER STATUS</h2>
-            <div class="stat-row">FUEL: <span>5000 L</span></div>
-            <div class="stat-row">RIOT POINTS: <span>1250</span></div>
-            <div class="stat-row">BREAD: <span id="money-val">100 €</span></div>
-            <h2 class="section-title">TOIMINNOT</h2>
-            <button class="menu-btn special">SKILL TREE</button>
-            <button class="menu-btn special">GAMBLING</button>
-            <button class="menu-btn danger">RAGE QUIT</button>
+            <div class="stat-row"><span class="stat-label">NAME:</span><span class="stat-value" id="player-name-val">-</span></div>
+            <div class="stat-row"><span class="stat-label">FUEL:</span><span class="stat-value" id="fuel-val">5000 L</span></div>
+            <div class="stat-row"><span class="stat-label">RIOT POINTS:</span><span class="stat-value" id="points-val">0</span></div>
+            <div class="stat-row"><span class="stat-label">BREAD:</span><span class="stat-value" id="money-val">100 €</span></div>
+        </section>
+
+        <section class="panel leaderboard-section">
+            <h2 class="section-title">LEADERBOARD</h2>
+            <table class="leaderboard-table">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Pilot</th>
+                    <th>Pts</th>
+                </tr>
+                </thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+            <div class="leaderboard-empty" id="leaderboard-empty">No scores yet</div>
+            <button class="leaderboard-new-run" id="new-run-btn" type="button" hidden>NEW RUN</button>
         </section>
 
         <section class="panel inventory-section">
             <h2 class="section-title">INVENTORY</h2>
-            <div class="anime-grid">
-                <div class="item-slot"><img
-                        src="https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx21-ELSYx3yMPcKM.jpg"
-                        alt="OP"></div>
+            <div class="anime-grid" id="anime-inventory">
+                <div class="item-slot loading-slot">...</div>
                 <div class="item-slot"></div>
                 <div class="item-slot"></div>
                 <div class="item-slot"></div>
@@ -41,7 +53,38 @@
                 <div class="item-slot"></div>
             </div>
         </section>
+
+        <section class="panel collection-section">
+            <h2 class="section-title">COLLECTIONS</h2>
+            <div class="collection-box">
+                <table class="collection-table">
+                    <thead>
+                    <tr>
+                        <th>Anime</th>
+                        <th>Average</th>
+                        <th>Cost</th>
+                        <th>Points</th>
+                    </tr>
+                    </thead>
+                    <tbody id="anime-collection"></tbody>
+                </table>
+                <div class="collection-empty" id="collection-empty">Click anime to collect</div>
+            </div>
+        </section>
     </aside>
+</div>
+
+<!-- Player Name Modal -->
+<div id="playerNameModal" class="modal">
+    <div class="modal-content">
+        <h2 class="modal-title">Player Name</h2>
+        <p class="modal-message">Enter your pilot name.</p>
+        <input class="modal-input" id="player-name-input" type="text" maxlength="24" autocomplete="off">
+
+        <div class="modal-actions">
+            <button class="btn btn-confirm" id="player-name-confirm">Start</button>
+        </div>
+    </div>
 </div>
 
 <!-- Travel Confirmation Modal -->
@@ -61,8 +104,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script src="js/game.js"></script>
-<script src="js/map.js"></script>
 <script src="js/main.js"></script>
+<script src="js/map.js"></script>
 
 </body>
 </html>
