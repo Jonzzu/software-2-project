@@ -80,8 +80,22 @@ function addAirportMarker(airport) {
 function openTravelModal(airport) {
     const modal = document.getElementById('travelModal');
     const modalTitle = document.querySelector('#travelModal .modal-title');
+    const fuelInfo = document.getElementById('travel-fuel-info');
 
     modalTitle.textContent = airport.name;
+
+    if (currentAirport) {
+        const distanceKm = calculateDistanceKm(currentAirport, airport);
+        const fuelCost = typeof calculateFuelCost === 'function'
+            ? calculateFuelCost(distanceKm)
+            : Math.max(1, Math.ceil(distanceKm * 0.2));
+        fuelInfo.textContent = `Fuel consumption: ${fuelCost} L (Distance: ${Math.round(distanceKm)} km)`;
+        fuelInfo.style.color = fuelCost > (typeof gameState !== 'undefined' ? gameState.fuel : 999999) ? '#f44336' : '#666';
+    } else {
+        fuelInfo.textContent = 'Starting location';
+        fuelInfo.style.color = '#666';
+    }
+
     modal.classList.add('active');
 
     // Remove old listeners

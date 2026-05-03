@@ -155,6 +155,7 @@ function createCollectionRow(anime) {
     const score = getAnimeScore(anime);
 
     animeInfo.className = 'collection-anime';
+    animeInfo.addEventListener('click', () => showAnimeDetails(anime));
 
     if (anime.image) {
         const image = document.createElement('img');
@@ -179,6 +180,35 @@ function createCollectionRow(anime) {
     row.appendChild(pointsCell);
 
     return row;
+}
+
+function showAnimeDetails(anime) {
+    const modal = document.getElementById('animeDetailModal');
+    const title = document.getElementById('anime-detail-title');
+    const image = document.getElementById('anime-detail-image');
+    const description = document.getElementById('anime-detail-description');
+    const closeBtn = document.getElementById('anime-detail-close');
+
+    if (!modal || !title || !image || !description || !closeBtn) {
+        return;
+    }
+
+    title.textContent = anime.title;
+    image.src = anime.image || '';
+    image.alt = anime.title;
+    description.innerHTML = anime.description || 'No description available.';
+
+    modal.classList.add('active');
+
+    closeBtn.onclick = () => {
+        modal.classList.remove('active');
+    };
+
+    window.onclick = (event) => {
+        if (event.target === modal) {
+            modal.classList.remove('active');
+        }
+    };
 }
 
 function calculateCollectionPoints() {
@@ -289,7 +319,7 @@ function renderLeaderboard() {
         newRunButton.hidden = !gameState.gameOver;
     }
 
-    leaderboard.slice(0, 5).forEach((entry, index) => {
+    leaderboard.forEach((entry, index) => {
         const row = document.createElement('tr');
         const rankCell = document.createElement('td');
         const nameCell = document.createElement('td');

@@ -22,22 +22,24 @@
             <h2 class="section-title">PLAYER STATUS</h2>
             <div class="stat-row"><span class="stat-label">NAME:</span><span class="stat-value" id="player-name-val">-</span></div>
             <div class="stat-row"><span class="stat-label">FUEL:</span><span class="stat-value" id="fuel-val">5000 L</span></div>
-            <div class="stat-row"><span class="stat-label">RIOT POINTS:</span><span class="stat-value" id="points-val">0</span></div>
-            <div class="stat-row"><span class="stat-label">BREAD:</span><span class="stat-value" id="money-val">100 €</span></div>
+            <div class="stat-row"><span class="stat-label">POINTS:</span><span class="stat-value" id="points-val">0</span></div>
+            <div class="stat-row"><span class="stat-label">MONEY:</span><span class="stat-value" id="money-val">100 €</span></div>
         </section>
 
         <section class="panel leaderboard-section">
             <h2 class="section-title">LEADERBOARD</h2>
-            <table class="leaderboard-table">
-                <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Pilot</th>
-                    <th>Pts</th>
-                </tr>
-                </thead>
-                <tbody id="leaderboard-body"></tbody>
-            </table>
+            <div class="leaderboard-box">
+                <table class="leaderboard-table">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Pilot</th>
+                        <th>Pts</th>
+                    </tr>
+                    </thead>
+                    <tbody id="leaderboard-body"></tbody>
+                </table>
+            </div>
             <div class="leaderboard-empty" id="leaderboard-empty">No scores yet</div>
             <button class="leaderboard-new-run" id="new-run-btn" type="button" hidden>NEW RUN</button>
         </section>
@@ -92,10 +94,25 @@
     <div class="modal-content">
         <h2 class="modal-title"></h2>
         <p class="modal-message">Do you want to travel here?</p>
+        <p class="modal-message fuel-info" id="travel-fuel-info"></p>
 
         <div class="modal-actions">
             <button class="btn btn-confirm">Confirm</button>
             <button class="btn btn-cancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Anime Detail Modal -->
+<div id="animeDetailModal" class="modal">
+    <div class="modal-content anime-detail-content">
+        <h2 class="modal-title" id="anime-detail-title">Anime Title</h2>
+        <div class="anime-detail-body">
+            <img id="anime-detail-image" src="" alt="">
+            <div id="anime-detail-description" class="anime-description"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-confirm" id="anime-detail-close">Close</button>
         </div>
     </div>
 </div>
